@@ -7,38 +7,73 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
+    android:gravity="center_horizontal"
     tools:context=".WordyActivity">
 
+    <!-- Title -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/Wordy"
-        android:textSize="28sp"
+        android:textSize="32sp"
         android:textStyle="bold"
         android:layout_gravity="center_horizontal"
         android:paddingBottom="16dp"/>
 
-    <!-- Paceholder for the future 6X5 grid -->
-    <TextView
-        android:id="@+id/tvPlaceholder"
+    <!-- 6 Rows of Guess Boxes -->
+    <LinearLayout
+        android:id="@+id/boardContainer"
+        android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"/>
+        android:gravity="center_horizontal">
+
+
+    </LinearLayout>
+
+    <!-- Input field -->
+    <EditText
+        android:id="@+id/etGuess"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:hint="@string/hint2"
+        android:maxLength="5"
+        android:textSize="18sp" />
 
     <!-- Button Row -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="32dp">
+        android:layout_marginTop="16dp">
 
         <Button
             android:id="@+id/btnAddWord"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/btnAddWord" />
+
+        <Button
+            android:id="@+id/btnSubmit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/submit" />
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/clear" />
+
+        <Button
+            android:id="@+id/btnRestart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/restart"/>
 
     </LinearLayout>
 
