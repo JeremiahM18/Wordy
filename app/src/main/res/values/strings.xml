@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Wordy</string>
+    <string name="Wordy">Wordy</string>
+    <string name="newWord">Add a new Wordy word</string>
+    <string name="hint">Enter 5-letter word</string>
+
+    <string name="btnAddWord">Add Word</string>
+    <string name="btnCancel">Cancel</string>
+    <string name="btnAdd">Add</string>
+
+</resources>
