@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -21,6 +22,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.SwitchCompat;
+
 import android.content.SharedPreferences;
 
 public class WordyActivity extends AppCompatActivity {
@@ -42,6 +44,33 @@ public class WordyActivity extends AppCompatActivity {
     private boolean gameOver = false;
 
     private SwitchCompat themeSwitch;
+
+    // Save/Load
+    private static final String KEY_WORD = "key_word";
+    private static final String KEY_ROW = "key_row";
+    private static final String KEY_GAME_OVER = "key_game_over";
+    private static final String KEY_BOARD = "key_board";
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString(KEY_WORD, currentWord);
+        outState.putInt(KEY_ROW, currentRow);
+        outState.putBoolean(KEY_GAME_OVER, gameOver);
+
+        // Save board letters
+        StringBuilder flat = new StringBuilder();
+
+        for (int r = 0; r < 6; r++) {
+            for (int c = 0; c < 5; c++) {
+                String letter = letterBoxes[r][c].getText().toString();
+                flat.append(letter.isEmpty() ? '_' : letter.charAt(0));
+            }
+        }
+
+        outState.putString(KEY_BOARD, flat.toString());
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +130,51 @@ public class WordyActivity extends AppCompatActivity {
 
         // Build the 6X5 board
         createBoard();
-        loadNewWord();
+
+        if (savedInstanceState == null) {
+            loadNewWord();
+        }
+        else {
+            currentWord = savedInstanceState.getString(KEY_WORD, "");
+            currentRow = savedInstanceState.getInt(KEY_ROW, 0);
+            gameOver = savedInstanceState.getBoolean(KEY_GAME_OVER, false);
+
+            // Rebuild board from flattened string
+            String flat = savedInstanceState.getString(KEY_BOARD, null);
+
+            if(flat != null && flat.length() == 30) {
+                int index = 0;
+
+                for (int r = 0; r < 6; r++) {
+                    for (int c = 0; c < 5; c++) {
+
+                        char ch = flat.charAt(index++);
+
+                        if (ch != '_') {
+                            letterBoxes[r][c].setText(String.valueOf(ch));
+                        }
+                    }
+                }
+                // Re-color rows
+                int oldRow = currentRow;
+                for (int r = 0; r < oldRow; r++) {
+                    StringBuilder guess = new StringBuilder();
+
+                    for(int c = 0; c < 5; c++) {
+                        char cell = flat.charAt(r * 5 + c);
+                        guess.append(cell == '_' ? ' ' : cell);
+                    }
+                    currentRow = r;
+                    colorRow(guess.toString());
+                }
+                currentRow = oldRow;
+            }
+
+            // Safety net
+            if(currentWord == null || currentWord.isEmpty()){
+                loadNewWord();
+            }
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -110,11 +183,11 @@ public class WordyActivity extends AppCompatActivity {
         });
     }
 
-    private void createBoard(){
+    private void createBoard() {
         int rows = 6;
         int cols = 5;
 
-        for(int row = 0; row < rows; row++) {
+        for (int row = 0; row < rows; row++) {
             // Create a horizontal row layout
             LinearLayout rowLayout = new LinearLayout(this);
             rowLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -155,9 +228,11 @@ public class WordyActivity extends AppCompatActivity {
     private void styleEmptyBox(TextView box) {
         box.setBackgroundColor(ContextCompat.getColor(this, R.color.empty));
         box.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
-     //   box.setBackgroundResource(R.drawable.tile_boarder);
+        //   box.setBackgroundResource(R.drawable.tile_boarder);
     }
 
+    // Helper to convert density independent pixels to actual screen pixels
+    // Ensures UI looks the same on different devices
     private int dpToPx(int dp) {
         return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
                 dp, getResources().getDisplayMetrics()));
@@ -180,7 +255,7 @@ public class WordyActivity extends AppCompatActivity {
     }
 
     private void handleSubmit() {
-        if(gameOver) {
+        if (gameOver) {
             Toast.makeText(this,
                     "Game over. Restart to play again.", Toast.LENGTH_SHORT).show();
             return;
@@ -194,13 +269,13 @@ public class WordyActivity extends AppCompatActivity {
 
         String guess = etGuess.getText().toString().trim().toUpperCase();
 
-        if(guess.length() != 5) {
+        if (guess.length() != 5) {
             Toast.makeText(this,
                     "Please enter a 5-letter word.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if(!guess.matches("[A-Z]+")) {
+        if (!guess.matches("[A-Z]+")) {
             Toast.makeText(this,
                     "Guess must contain only letters (A-Z).", Toast.LENGTH_SHORT).show();
             return;
@@ -208,7 +283,7 @@ public class WordyActivity extends AppCompatActivity {
 
         // Put letters into current row
         char[] guessChars = guess.toCharArray();
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             letterBoxes[currentRow][i].setText(String.valueOf(guessChars[i]));
         }
 
@@ -216,14 +291,14 @@ public class WordyActivity extends AppCompatActivity {
         colorRow(guess);
 
         // Check win/lose
-        if(guess.equals(currentWord)) {
-          //  Toast.makeText(this, "You got it!", Toast.LENGTH_SHORT).show();
+        if (guess.equals(currentWord)) {
+            //  Toast.makeText(this, "You got it!", Toast.LENGTH_SHORT).show();
             gameOver = true;
             showEndGameDialog("You Win!",
                     "Great job! The word was: " + currentWord, true);
         } else {
             currentRow++;
-            if(currentRow >= 6) {
+            if (currentRow >= 6) {
 //                Toast.makeText(this,
 //                        "Out of guesses! The word was: " + currentWord, Toast.LENGTH_SHORT).show();
                 gameOver = true;
@@ -240,8 +315,8 @@ public class WordyActivity extends AppCompatActivity {
         currentRow = 0;
 
         // Clear all boxes on board
-        for(int r = 0; r < 6; r++) {
-            for(int c = 0; c < 5; c++){
+        for (int r = 0; r < 6; r++) {
+            for (int c = 0; c < 5; c++) {
                 TextView box = letterBoxes[r][c];
                 box.setText("");
                 styleEmptyBox(box);
@@ -258,23 +333,23 @@ public class WordyActivity extends AppCompatActivity {
         int[] counts = new int[26];
 
         // Count letters in answer
-        for(char c : ans) {
+        for (char c : ans) {
             counts[c - 'A']++;
         }
 
         // First pass: greens
-        for(int i = 0; i < 5; i++) {
-            if(g[i] == ans[i]) {
+        for (int i = 0; i < 5; i++) {
+            if (g[i] == ans[i]) {
                 result[i] = 2;
                 counts[g[i] - 'A']--;
             }
         }
 
         // Second pass: yellow
-        for(int i = 0; i < 5; i++) {
-            if(result[i] == 0) {
-                int idx = g[i] -'A';
-                if(idx >= 0 && idx < 26 && counts[idx] > 0) {
+        for (int i = 0; i < 5; i++) {
+            if (result[i] == 0) {
+                int idx = g[i] - 'A';
+                if (idx >= 0 && idx < 26 && counts[idx] > 0) {
                     result[i] = 1;
                     counts[idx]--;
                 }
@@ -287,13 +362,13 @@ public class WordyActivity extends AppCompatActivity {
         int green = ContextCompat.getColor(this, R.color.green);
         int text = ContextCompat.getColor(this, R.color.white);
 
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             TextView box = letterBoxes[currentRow][i];
             box.setTextColor(text);
 
-            if(result[i] == 2) {
+            if (result[i] == 2) {
                 box.setBackgroundColor(green);
-            } else if(result[i] == 1) {
+            } else if (result[i] == 1) {
                 box.setBackgroundColor(yellow);
             } else {
                 box.setBackgroundColor(grey);
@@ -307,8 +382,8 @@ public class WordyActivity extends AppCompatActivity {
         currentRow = 0;
 
         // Clear board
-        for(int r = 0; r < 6; r++) {
-            for(int c = 0; c < 5; c++) {
+        for (int r = 0; r < 6; r++) {
+            for (int c = 0; c < 5; c++) {
                 TextView box = letterBoxes[r][c];
                 box.setText("");
                 styleEmptyBox(box);
