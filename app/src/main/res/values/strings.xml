@@ -4,6 +4,7 @@
     <string name="newWord">Add a new Wordy word</string>
     <string name="hint">Enter 5-letter word</string>
     <string name="hint2">Enter a 5-letter word guess</string>
+    <string name="darkMode">Dark Mode</string>
 
     <string name="btnAddWord">Add Word</string>
     <string name="btnCancel">Cancel</string>

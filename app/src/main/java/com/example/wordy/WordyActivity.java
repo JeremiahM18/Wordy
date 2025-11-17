@@ -13,11 +13,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.appcompat.widget.SwitchCompat;
+import android.content.SharedPreferences;
 
 public class WordyActivity extends AppCompatActivity {
 
@@ -37,6 +41,8 @@ public class WordyActivity extends AppCompatActivity {
     private int currentRow = 0;
     private boolean gameOver = false;
 
+    private SwitchCompat themeSwitch;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +56,24 @@ public class WordyActivity extends AppCompatActivity {
         btnSubmit = findViewById(R.id.btnSubmit);
         btnClear = findViewById(R.id.btnClear);
         btnRestart = findViewById(R.id.btnRestart);
+        themeSwitch = findViewById(R.id.themeSwitch);
+
+        SharedPreferences prefs = getSharedPreferences("setting", MODE_PRIVATE);
+        boolean darkMode = prefs.getBoolean("darkMode", false);
+
+        AppCompatDelegate.setDefaultNightMode(darkMode ?
+                AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+
+        themeSwitch.setChecked(darkMode);
+
+        themeSwitch.setOnCheckedChangeListener(((buttonView, isChecked) -> {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("darkMode", isChecked);
+            editor.apply();
+
+            AppCompatDelegate.setDefaultNightMode(isChecked ?
+                    AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
+        }));
 
         repository = new WordRepository();
 
@@ -68,7 +92,7 @@ public class WordyActivity extends AppCompatActivity {
         });
 
         btnClear.setOnClickListener(v -> {
-            etGuess.setText("");
+            clearCurrentGameKeepWord();
         });
 
         btnRestart.setOnClickListener(v -> {
@@ -129,9 +153,9 @@ public class WordyActivity extends AppCompatActivity {
     }
 
     private void styleEmptyBox(TextView box) {
-//        box.setBackgroundColor(ContextCompat.getColor(this, R.color.white));
-//        box.setTextColor(ContextCompat.getColor(this, R.color.black));
-        box.setBackgroundResource(R.drawable.tile_boarder);
+        box.setBackgroundColor(ContextCompat.getColor(this, R.color.empty));
+        box.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+     //   box.setBackgroundResource(R.drawable.tile_boarder);
     }
 
     private int dpToPx(int dp) {
@@ -193,14 +217,34 @@ public class WordyActivity extends AppCompatActivity {
 
         // Check win/lose
         if(guess.equals(currentWord)) {
-            Toast.makeText(this, "You got it!", Toast.LENGTH_SHORT).show();
+          //  Toast.makeText(this, "You got it!", Toast.LENGTH_SHORT).show();
             gameOver = true;
+            showEndGameDialog("You Win!",
+                    "Great job! The word was: " + currentWord, true);
         } else {
             currentRow++;
             if(currentRow >= 6) {
-                Toast.makeText(this,
-                        "Out of guesses! The word was: " + currentWord, Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this,
+//                        "Out of guesses! The word was: " + currentWord, Toast.LENGTH_SHORT).show();
                 gameOver = true;
+                showEndGameDialog("Game Over",
+                        "You're out of guesses.\n The word was: " + currentWord, false);
+            }
+        }
+
+        etGuess.setText("");
+    }
+
+    private void clearCurrentGameKeepWord() {
+        gameOver = false;
+        currentRow = 0;
+
+        // Clear all boxes on board
+        for(int r = 0; r < 6; r++) {
+            for(int c = 0; c < 5; c++){
+                TextView box = letterBoxes[r][c];
+                box.setText("");
+                styleEmptyBox(box);
             }
         }
 
@@ -273,6 +317,13 @@ public class WordyActivity extends AppCompatActivity {
 
         etGuess.setText("");
         loadNewWord();
+    }
+
+    private void showEndGameDialog(String title, String message, boolean won) {
+        new AlertDialog.Builder(this).setTitle(title).setMessage(message)
+                .setCancelable(false).setPositiveButton("Play Again",
+                        (dialog, which) -> restartGame())
+                .setNegativeButton("Close", (dialog, which) -> dialog.dismiss()).show();
     }
 
 }
